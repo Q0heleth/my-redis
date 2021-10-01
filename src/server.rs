@@ -62,15 +62,23 @@ pub(crate) struct Handler {
 }
 impl Handler {
    async fn run(&mut self) -> crate::Result<()>{
-      loop {
-          let contents = self.connection.read_frame().await?;
-          if contents.len() == 0 {
-              return Ok(());
-          }
-          println!("{}",String::from_utf8(contents.to_vec()).unwrap());
-
-         //let ret = self.connection.write_frame("get it!".as_bytes()).await;
+      while !self.shutdown.is_shutdown() {
+         let maybe_frame = tokio::select! {
+              res = self.connection.read_frame() => res?,
+             _ = self.shutdown.recv() => {
+                 return Ok(());
+             }
+          };
+          let frame = match maybe_frame {
+              Some(frame) => frame,
+              None => return Ok(()),
+          };
+          let cmd = Command::from_frame(frame);
+          debug!(?cmd);
+          cmd.apply(&self.db,&mut self.connection,&mut self.shutdown)
+              .await?;
       }
+       Ok(())
    }
 }
 

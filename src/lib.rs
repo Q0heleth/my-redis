@@ -2,6 +2,7 @@ pub mod server;
 mod db;
 mod shutdown;
 mod connection;
+mod frame;
 
 use connection::{Connection};
 use shutdown::{Shutdown};

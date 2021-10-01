@@ -12,4 +12,14 @@ impl Shutdown {
             notify,
         }
     }
+    pub(crate) fn is_shutdown(&self) -> bool {
+        self.shutdown
+    }
+    pub async fn recv(&mut self) {
+        if self.shutdown {
+            return ;
+        }
+        let _ = self.notify.recv().await;
+        self.shutdown = true;
+    }
 }
